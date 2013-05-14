@@ -25,6 +25,9 @@
 #include <volume/volumecontrol.h>
 #include <usbmodeselector.h>
 #include <shutdownscreen.h>
+#include <compositor/lipstickcompositor.h>
+#include <compositor/switchermodel.h>
+#include <compositor/switcherpixmapitem.h>
 
 LipstickPlugin::LipstickPlugin(QObject *parent) :
     QQmlExtensionPlugin(parent)
@@ -43,4 +46,8 @@ void LipstickPlugin::registerTypes(const char *uri)
     qmlRegisterUncreatableType<VolumeControl>("org.nemomobile.lipstick", 0, 1, "VolumeControl", "This type is initialized by HomeApplication");
     qmlRegisterUncreatableType<USBModeSelector>("org.nemomobile.lipstick", 0, 1, "USBModeSelector", "This type is initialized by HomeApplication");
     qmlRegisterUncreatableType<ShutdownScreen>("org.nemomobile.lipstick", 0, 1, "ShutdownScreen", "This type is initialized by HomeApplication");
+
+    qmlRegisterType<LipstickCompositor>("org.nemomobile.lipstick", 0, 1, "Compositor");
+    qmlRegisterType<SwitcherModel>("org.nemomobile.lipstick", 0, 1, "SwitcherModel");
+    qmlRegisterType<SwitcherPixmapItem>("org.nemomobile.lipstick", 0, 1, "SwitcherPixmapItem");
 }

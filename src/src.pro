@@ -22,6 +22,7 @@ PUBLICHEADERS += \
     utilities/qobjectlistmodel.h \
     utilities/closeeventeater.h \
     homeapplication.h \
+    homewindow.h \
     lipstickglobal.h \
     lipsticksettings.h \
     components/launcheritem.h \
@@ -55,6 +56,7 @@ HEADERS += \
 
 SOURCES += \
     homeapplication.cpp \
+    homewindow.cpp \
     lipsticksettings.cpp \
     utilities/qobjectlistmodel.cpp \
     utilities/closeeventeater.cpp \
@@ -77,6 +79,8 @@ SOURCES += \
     usbmodeselector.cpp \
     shutdownscreen.cpp \
     connectionselector.cpp
+
+include(compositor/compositor.pri)
 
 CONFIG += link_pkgconfig mobility qt warn_on depend_includepath qmake_cache target_qt
 MOBILITY += sensors systeminfo
