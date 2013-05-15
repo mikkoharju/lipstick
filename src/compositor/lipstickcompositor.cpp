@@ -11,7 +11,7 @@
 LipstickCompositor *LipstickCompositor::m_instance = 0;
 
 LipstickCompositor::LipstickCompositor()
-: m_totalWindowCount(0), m_nextWindowId(1), m_homeActive(true)
+: QWaylandCompositor(this), m_totalWindowCount(0), m_nextWindowId(1), m_homeActive(true)
 {
     if (m_instance) qFatal("LipstickCompositor: Only one compositor instance per process is supported");
     m_instance = this;
