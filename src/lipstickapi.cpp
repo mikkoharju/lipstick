@@ -6,12 +6,12 @@
 LipstickApi::LipstickApi(QObject *parent)
 : QObject(parent)
 {
-    QObject::connect(HomeApplication::instance(), SIGNAL(_activeChanged()), this, SIGNAL(activeChanged()));
+    QObject::connect(HomeApplication::instance(), SIGNAL(homeActiveChanged()), this, SIGNAL(activeChanged()));
 }
 
 bool LipstickApi::active() const
 {
-    return HomeApplication::instance()->_active();
+    return HomeApplication::instance()->homeActive();
 }
 
 QObject *LipstickApi::compositor() const

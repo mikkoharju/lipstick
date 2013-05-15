@@ -7,9 +7,12 @@
 #include <QWaylandCompositor>
 #include <QWaylandSurfaceItem>
 
-class LipstickCompositorWindow;
 class SwitcherModel;
-class LIPSTICK_EXPORT LipstickCompositor : public QQuickWindow, public QWaylandCompositor, public QQmlParserStatus
+class LipstickCompositorWindow;
+class LipstickCompositorProcWindow;
+
+class LIPSTICK_EXPORT LipstickCompositor : public QQuickWindow, public QWaylandCompositor,
+                                           public QQmlParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
@@ -37,6 +40,8 @@ public:
     Q_INVOKABLE QObject *windowForId(int) const;
     Q_INVOKABLE void clearKeyboardFocus();
 
+    LipstickCompositorProcWindow *mapProcWindow(const QRect &);
+
 signals:
     void windowAdded(QObject *window);
     void windowRemoved(QObject *window);
@@ -59,6 +64,7 @@ private slots:
 
 private:
     friend class LipstickCompositorWindow;
+    friend class LipstickCompositorProcWindow;
     friend class SwitcherModel;
     friend class SwitcherPixmapItem;
     friend class WindowProperty;
@@ -102,6 +108,7 @@ class LipstickCompositorWindow : public QWaylandSurfaceItem
 
     Q_PROPERTY(int windowId READ windowId CONSTANT)
     Q_PROPERTY(QVariant userData READ userData WRITE setUserData NOTIFY userDataChanged)
+    Q_PROPERTY(bool isInProcess READ isInProcess CONSTANT)
 
 public:
     LipstickCompositorWindow(int windowId, QWaylandSurface *surface, QQuickItem *parent = 0);
@@ -111,15 +118,32 @@ public:
 
     int windowId() const;
 
+    virtual bool isInProcess() const;
+
 public slots:
     void releaseWindow();
 
 signals:
     void userDataChanged();
+    void titleChanged();
 
 private:
     int m_windowId;
     QVariant m_data;
+};
+
+class LipstickCompositorProcWindow : public LipstickCompositorWindow
+{
+    Q_OBJECT
+public:
+    void hide();
+
+    virtual bool isInProcess() const;
+    virtual bool isTextureProvider() const { return false; }
+
+private:
+    friend class LipstickCompositor;
+    LipstickCompositorProcWindow(int windowId, QQuickItem *parent = 0);
 };
 
 #endif // LIPSTICKCOMPOSITOR_H

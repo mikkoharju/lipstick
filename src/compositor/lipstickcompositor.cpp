@@ -18,7 +18,7 @@ LipstickCompositor::LipstickCompositor()
 
     QObject::connect(this, SIGNAL(frameSwapped()), this, SLOT(windowSwapped()));
 
-    emit HomeApplication::instance()->_activeChanged();
+    emit HomeApplication::instance()->homeActiveChanged();
 }
 
 LipstickCompositor::~LipstickCompositor()
@@ -72,7 +72,7 @@ void LipstickCompositor::setHomeActive(bool a)
     m_homeActive = a;
 
     emit homeActiveChanged();
-    emit HomeApplication::instance()->_activeChanged();
+    emit HomeApplication::instance()->homeActiveChanged();
 }
 
 QObject *LipstickCompositor::windowForId(int id) const
@@ -263,6 +263,11 @@ int LipstickCompositorWindow::windowId() const
     return m_windowId;
 }
 
+bool LipstickCompositorWindow::isInProcess() const
+{
+    return false;
+}
+
 void LipstickCompositorWindow::releaseWindow()
 {
     deleteLater();
@@ -282,5 +287,46 @@ void LipstickCompositorWindowReference::release()
 {
     if (0 == --m_refCount)
         delete this;
+}
+
+LipstickCompositorProcWindow *LipstickCompositor::mapProcWindow(const QRect &g)
+{
+    int id = m_nextWindowId++;
+
+    LipstickCompositorProcWindow *item = new LipstickCompositorProcWindow(id, contentItem());
+    m_totalWindowCount++;
+
+    item->setPosition(g.topLeft());
+    item->setSize(g.size());
+    item->setTouchEventsEnabled(true);
+
+    emit windowCountChanged();
+    emit windowAdded(item);
+    emit availableWinIdsChanged();
+
+    return item;
+}
+
+LipstickCompositorProcWindow::LipstickCompositorProcWindow(int windowId, QQuickItem *parent)
+: LipstickCompositorWindow(windowId, 0, parent)
+{
+}
+
+/*
+    Ownership of the window transfers to the compositor, and it might be destroyed at any time.
+*/
+void LipstickCompositorProcWindow::hide()
+{
+    deleteLater();
+
+    LipstickCompositor *c = LipstickCompositor::instance();
+    emit c->windowCountChanged();
+    emit c->windowRemoved(this);
+    emit c->availableWinIdsChanged();
+}
+
+bool LipstickCompositorProcWindow::isInProcess() const
+{
+    return true;
 }
 

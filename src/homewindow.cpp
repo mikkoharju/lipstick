@@ -35,8 +35,10 @@ public:
     static bool isCompositor();
     static void checkMode();
 
+    bool isVisible;
     QRect geometry;
     QQuickWindow *window;
+    LipstickCompositorProcWindow *compositorWindow;
     QQmlContext *context;
     QQuickItem *root;
     QList<QQmlError> errors;
@@ -45,7 +47,7 @@ public:
 HomeWindowPrivate::Mode HomeWindowPrivate::mode = HomeWindowPrivate::Unknown;
 
 HomeWindowPrivate::HomeWindowPrivate()
-: window(0), context(0), root(0)
+: isVisible(false), window(0), compositorWindow(0), context(0), root(0)
 {
     checkMode();
     if (0 == HomeApplication::instance())
@@ -102,28 +104,49 @@ HomeWindow::~HomeWindow()
 
 bool HomeWindow::isVisible() const
 {
-    if (d->isWindow())
-        return d->window->isVisible();
-    else
-        return false;
+    return d->isVisible;
 }
 
 void HomeWindow::show()
 {
-    if (d->isWindow())
+    if (d->isVisible)
+        return;
+
+    d->isVisible = true;
+    if (d->isWindow()) {
         d->window->show();
+    } else {
+        d->compositorWindow = LipstickCompositor::instance()->mapProcWindow(d->geometry);
+        if (d->root) d->root->setParentItem(d->compositorWindow);
+    }
 }
 
 void HomeWindow::hide()
 {
-    if (d->isWindow())
+    if (!d->isVisible)
+        return;
+
+    d->isVisible = false;
+    if (d->isWindow()) {
         d->window->hide();
+    } else if (d->compositorWindow) {
+        d->compositorWindow->hide();
+        d->compositorWindow = 0;
+    }
 }
 
 void HomeWindow::showFullScreen()
 {
-    if (d->isWindow())
+    if (d->isVisible)
+        return;
+
+    d->isVisible = true;
+    if (d->isWindow()) {
         d->window->showFullScreen();
+    } else {
+        d->compositorWindow = LipstickCompositor::instance()->mapProcWindow(d->geometry);
+        if (d->root) d->root->setParentItem(d->compositorWindow);
+        }
 }
 
 QQuickItem *HomeWindow::rootObject() const
@@ -150,10 +173,12 @@ void HomeWindow::setSource(const QUrl &source)
         d->root = item;
 
         d->root->setSize(d->geometry.size());
-        if (d->isCompositor())
-            d->root->setPosition(d->geometry.topLeft());
 
-        item->setParentItem(d->window->contentItem());
+        if (d->isWindow())
+            item->setParentItem(d->window->contentItem());
+        else if (d->compositorWindow)
+            item->setParentItem(d->compositorWindow);
+
     } else {
         delete o;
     }

@@ -138,7 +138,7 @@ void HomeApplication::sendStartupNotifications()
     mainWindowInstance()->showFullScreen();
 }
 
-bool HomeApplication::_active() const
+bool HomeApplication::homeActive() const
 {
     LipstickCompositor *c = LipstickCompositor::instance();
     return c?c->homeActive():(QGuiApplication::focusWindow() != 0);
@@ -150,7 +150,7 @@ bool HomeApplication::event(QEvent *e)
     if (LipstickCompositor::instance() == 0 &&
         (e->type() == QEvent::ApplicationActivate ||
          e->type() == QEvent::ApplicationDeactivate))
-        emit _activeChanged();
+        emit homeActiveChanged();
     return rv;
 }
 

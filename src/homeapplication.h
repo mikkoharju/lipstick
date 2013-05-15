@@ -90,9 +90,16 @@ public:
      */
     void restoreSignalHandlers();
 
+    /*!
+     * Gets the home active flag.
+     */
+    bool homeActive() const;
+
 signals:
-    //! Internal - for LipstickApi class
-    void _activeChanged();
+    /*!
+     * Emitted whenever the home active flag changes.
+     */
+    void homeActiveChanged();
 
 protected:
     virtual bool event(QEvent *);
@@ -106,7 +113,6 @@ private slots:
 
 private:
     friend class LipstickApi;
-    bool _active() const;
 
     //! A signal handler that quits the QApplication
     static void quitSignalHandler(int);
