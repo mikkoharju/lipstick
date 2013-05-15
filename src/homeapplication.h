@@ -90,6 +90,13 @@ public:
      */
     void restoreSignalHandlers();
 
+signals:
+    //! Internal - for LipstickApi class
+    void _activeChanged();
+
+protected:
+    virtual bool event(QEvent *);
+
 private slots:
     /*!
      * Sends a dbus-signal after UI is visible, stops the process if it has
@@ -98,6 +105,9 @@ private slots:
     void sendStartupNotifications();
 
 private:
+    friend class LipstickApi;
+    bool _active() const;
+
     //! A signal handler that quits the QApplication
     static void quitSignalHandler(int);
 

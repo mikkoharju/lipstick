@@ -11,18 +11,14 @@
 LipstickCompositor *LipstickCompositor::m_instance = 0;
 
 LipstickCompositor::LipstickCompositor()
-: m_totalWindowCount(0), m_nextWindowId(1)
+: m_totalWindowCount(0), m_nextWindowId(1), m_homeActive(true)
 {
     if (m_instance) qFatal("LipstickCompositor: Only one compositor instance per process is supported");
     m_instance = this;
 
-    if (HomeApplication::instance()) {
-        HomeApplication::instance()->engine()->rootContext()->setContextProperty("windowCompositor", this);
-    } else {
-        qWarning("LipstickCompositor: Compositor registered before HomeApplication.  This compositor instance will not be accessible to application.");
-    }
-
     QObject::connect(this, SIGNAL(frameSwapped()), this, SLOT(windowSwapped()));
+
+    emit HomeApplication::instance()->_activeChanged();
 }
 
 LipstickCompositor::~LipstickCompositor()
@@ -61,6 +57,22 @@ int LipstickCompositor::windowCount() const
 int LipstickCompositor::ghostWindowCount() const
 {
     return m_totalWindowCount - windowCount();
+}
+
+bool LipstickCompositor::homeActive() const
+{
+    return m_homeActive;
+}
+
+void LipstickCompositor::setHomeActive(bool a)
+{
+    if (a == m_homeActive)
+        return;
+
+    m_homeActive = a;
+
+    emit homeActiveChanged();
+    emit HomeApplication::instance()->_activeChanged();
 }
 
 QObject *LipstickCompositor::windowForId(int id) const

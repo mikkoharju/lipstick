@@ -54,7 +54,9 @@ HEADERS += \
     screenlock/screenlockadaptor.h \
     volume/volumekeylistener.h \
     volume/volumecontrol.h \
-    volume/pulseaudiocontrol.h
+    volume/pulseaudiocontrol.h \
+    lipstickapi.h \
+
 
 SOURCES += \
     homeapplication.cpp \
@@ -80,7 +82,8 @@ SOURCES += \
     notifications/notificationfeedbackplayer.cpp \
     usbmodeselector.cpp \
     shutdownscreen.cpp \
-    connectionselector.cpp
+    connectionselector.cpp \
+    lipstickapi.cpp \
 
 CONFIG += link_pkgconfig mobility qt warn_on depend_includepath qmake_cache target_qt
 MOBILITY += sensors systeminfo

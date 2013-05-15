@@ -29,6 +29,12 @@
 #include <compositor/switchermodel.h>
 #include <compositor/switcherpixmapitem.h>
 #include <compositor/windowproperty.h>
+#include <lipstickapi.h>
+
+static QObject *lipstickApi_callback(QQmlEngine *e, QJSEngine *)
+{
+    return new LipstickApi(e);
+}
 
 LipstickPlugin::LipstickPlugin(QObject *parent) :
     QQmlExtensionPlugin(parent)
@@ -52,4 +58,5 @@ void LipstickPlugin::registerTypes(const char *uri)
     qmlRegisterType<SwitcherModel>("org.nemomobile.lipstick", 0, 1, "SwitcherModel");
     qmlRegisterType<SwitcherPixmapItem>("org.nemomobile.lipstick", 0, 1, "SwitcherPixmapItem");
     qmlRegisterType<WindowProperty>("org.nemomobile.lipstick", 0, 1, "WindowProperty");
+    qmlRegisterSingletonType<LipstickApi>("org.nemomobile.lipstick", 0, 1, "Lipstick", lipstickApi_callback);
 }

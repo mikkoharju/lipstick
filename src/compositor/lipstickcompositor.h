@@ -16,6 +16,7 @@ class LIPSTICK_EXPORT LipstickCompositor : public QQuickWindow, public QWaylandC
 
     Q_PROPERTY(int windowCount READ windowCount NOTIFY windowCountChanged)
     Q_PROPERTY(int ghostWindowCount READ ghostWindowCount NOTIFY ghostWindowCountChanged)
+    Q_PROPERTY(bool homeActive READ homeActive WRITE setHomeActive NOTIFY homeActiveChanged)
 
 public:
     LipstickCompositor();
@@ -30,6 +31,9 @@ public:
     int windowCount() const;
     int ghostWindowCount() const;
 
+    bool homeActive() const;
+    void setHomeActive(bool);
+
     Q_INVOKABLE QObject *windowForId(int) const;
     Q_INVOKABLE void clearKeyboardFocus();
 
@@ -41,6 +45,8 @@ signals:
     void ghostWindowCountChanged();
 
     void availableWinIdsChanged();
+
+    void homeActiveChanged();
 
 private slots:
     void surfaceDestroyed();
@@ -73,6 +79,8 @@ private:
     QHash<QWaylandSurface *, int> m_coverSurfaces;
     QHash<int, QWaylandSurface *> m_coverSurfaceIds;
     QList<SwitcherModel *> m_switcherModels;
+
+    bool m_homeActive;
 };
 
 class LipstickCompositorWindowReference : public QWaylandSurfaceItem

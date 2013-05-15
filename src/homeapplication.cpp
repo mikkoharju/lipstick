@@ -73,7 +73,6 @@ HomeApplication::HomeApplication(int &argc, char **argv, const QString &qmlPath)
 
     // Initialize the QML engine
     qmlEngine = new QQmlEngine(this);
-    qmlEngine->rootContext()->setContextProperty("windowCompositor", (QObject *)0);
 
     // Initialize the notification manager
     NotificationManager::instance();
@@ -137,6 +136,22 @@ void HomeApplication::sendStartupNotifications()
     // For device boot performance reasons initializing Home scene window must be done
     // only after ready signal is sent.
     mainWindowInstance()->showFullScreen();
+}
+
+bool HomeApplication::_active() const
+{
+    LipstickCompositor *c = LipstickCompositor::instance();
+    return c?c->homeActive():(QGuiApplication::focusWindow() != 0);
+}
+
+bool HomeApplication::event(QEvent *e)
+{
+    bool rv = QGuiApplication::event(e);
+    if (LipstickCompositor::instance() == 0 &&
+        (e->type() == QEvent::ApplicationActivate ||
+         e->type() == QEvent::ApplicationDeactivate))
+        emit _activeChanged();
+    return rv;
 }
 
 const QString &HomeApplication::qmlPath() const
