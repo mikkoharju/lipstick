@@ -28,6 +28,7 @@
 #include <compositor/lipstickcompositor.h>
 #include <compositor/switchermodel.h>
 #include <compositor/switcherpixmapitem.h>
+#include <compositor/windowproperty.h>
 
 LipstickPlugin::LipstickPlugin(QObject *parent) :
     QQmlExtensionPlugin(parent)
@@ -50,4 +51,5 @@ void LipstickPlugin::registerTypes(const char *uri)
     qmlRegisterType<LipstickCompositor>("org.nemomobile.lipstick", 0, 1, "Compositor");
     qmlRegisterType<SwitcherModel>("org.nemomobile.lipstick", 0, 1, "SwitcherModel");
     qmlRegisterType<SwitcherPixmapItem>("org.nemomobile.lipstick", 0, 1, "SwitcherPixmapItem");
+    qmlRegisterType<WindowProperty>("org.nemomobile.lipstick", 0, 1, "WindowProperty");
 }

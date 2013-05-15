@@ -6,6 +6,7 @@
 #include "switchermodel.h"
 #include <QWaylandSurface>
 #include "homeapplication.h"
+#include <QWaylandInputDevice>
 
 LipstickCompositor *LipstickCompositor::m_instance = 0;
 
@@ -77,50 +78,39 @@ QObject *LipstickCompositor::windowForId(int id) const
     return 0;
 }
 
-int LipstickCompositor::windowIdForCoverId(int id) const
+QWaylandSurface *LipstickCompositor::surfaceForId(int id) const
 {
-    QHash<int, QWaylandSurface *>::ConstIterator iter = m_coverSurfaceIds.find(id);
-    if (iter == m_coverSurfaceIds.end())
-        return 0;
+    if (m_coverSurfaceIds.contains(id))
+        return m_coverSurfaceIds[id];
 
-    QWaylandSurface *coverSurface = *iter;
+    for (QHash<QWaylandSurface *, LipstickCompositorWindow *>::ConstIterator iter = m_mappedSurfaces.begin();
+         iter != m_mappedSurfaces.end(); ++iter) {
 
-    uint localWindowId = coverSurface->windowProperties().value("SAILFISH_COVER_WINDOW", uint(0)).toUInt();
+        if ((*iter)->windowId() == id)
+            return iter.key();
+    }
 
+    return 0;
+}
+
+int LipstickCompositor::windowIdForLink(QWaylandSurface *s, uint link) const
+{
     for (QHash<QWaylandSurface *, LipstickCompositorWindow *>::ConstIterator iter = m_mappedSurfaces.begin();
          iter != m_mappedSurfaces.end(); ++iter) {
 
         QWaylandSurface *windowSurface = iter.key();
 
-        if (windowSurface->processId() == coverSurface->processId() &&
-            windowSurface->windowProperties().value("SAILFISH_WINID", uint(0)).toUInt() == localWindowId)
+        if (windowSurface->processId() == s->processId() &&
+            windowSurface->windowProperties().value("SAILFISH_WINID", uint(0)).toUInt() == link)
             return iter.value()->windowId();
     }
 
     return 0;
 }
 
-QObject *LipstickCompositor::windowForCoverId(int id) const
+void LipstickCompositor::clearKeyboardFocus()
 {
-    QHash<int, QWaylandSurface *>::ConstIterator iter = m_coverSurfaceIds.find(id);
-    if (iter == m_coverSurfaceIds.end())
-        return 0;
-
-    QWaylandSurface *coverSurface = *iter;
-
-    uint localWindowId = coverSurface->windowProperties().value("SAILFISH_COVER_WINDOW", uint(0)).toUInt();
-
-    for (QHash<QWaylandSurface *, LipstickCompositorWindow *>::ConstIterator iter = m_mappedSurfaces.begin();
-         iter != m_mappedSurfaces.end(); ++iter) {
-
-        QWaylandSurface *windowSurface = iter.key();
-
-        if (windowSurface->processId() == coverSurface->processId() &&
-            windowSurface->windowProperties().value("SAILFISH_WINID", uint(0)).toUInt() == localWindowId)
-            return iter.value();
-    }
-
-    return 0;
+    defaultInputDevice()->setKeyboardFocus(0); 
 }
 
 void LipstickCompositor::surfaceDestroyed()
@@ -163,6 +153,8 @@ void LipstickCompositor::surfaceMapped()
         emit windowCountChanged();
         emit windowAdded(item);
     }
+
+    emit availableWinIdsChanged();
 }
 
 void LipstickCompositor::surfaceUnmapped()
@@ -208,6 +200,8 @@ void LipstickCompositor::surfaceUnmapped(QWaylandSurface *surface)
         emit windowRemoved(item);
         if (gc != ghostWindowCount())
             emit ghostWindowCountChanged();
+
+        emit availableWinIdsChanged();
     } else if (m_coverSurfaces.contains(surface)) {
         int id = m_coverSurfaces[surface];
         m_coverSurfaces.remove(surface);
@@ -216,6 +210,8 @@ void LipstickCompositor::surfaceUnmapped(QWaylandSurface *surface)
         static_cast<LipstickCompositorWindowReference *>(surface->surfaceItem())->release();
 
         coverRemoved(id);
+
+        emit availableWinIdsChanged();
     }
 }
 

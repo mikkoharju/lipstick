@@ -31,8 +31,7 @@ public:
     int ghostWindowCount() const;
 
     Q_INVOKABLE QObject *windowForId(int) const;
-    Q_INVOKABLE int windowIdForCoverId(int) const;
-    Q_INVOKABLE QObject *windowForCoverId(int) const;
+    Q_INVOKABLE void clearKeyboardFocus();
 
 signals:
     void windowAdded(QObject *window);
@@ -40,6 +39,8 @@ signals:
 
     void windowCountChanged();
     void ghostWindowCountChanged();
+
+    void availableWinIdsChanged();
 
 private slots:
     void surfaceDestroyed();
@@ -54,6 +55,10 @@ private:
     friend class LipstickCompositorWindow;
     friend class SwitcherModel;
     friend class SwitcherPixmapItem;
+    friend class WindowProperty;
+
+    QWaylandSurface *surfaceForId(int) const;
+    int windowIdForLink(QWaylandSurface *, uint) const;
 
     void surfaceUnmapped(QWaylandSurface *);
     void coverAdded(int);

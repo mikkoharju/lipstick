@@ -18,6 +18,8 @@ MOC_DIR = .moc
 
 INCLUDEPATH += utilities components xtools
 
+include(compositor/compositor.pri)
+
 PUBLICHEADERS += \
     utilities/qobjectlistmodel.h \
     utilities/closeeventeater.h \
@@ -79,8 +81,6 @@ SOURCES += \
     usbmodeselector.cpp \
     shutdownscreen.cpp \
     connectionselector.cpp
-
-include(compositor/compositor.pri)
 
 CONFIG += link_pkgconfig mobility qt warn_on depend_includepath qmake_cache target_qt
 MOBILITY += sensors systeminfo
