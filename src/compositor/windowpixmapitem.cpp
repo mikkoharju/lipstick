@@ -278,6 +278,7 @@ void WindowPixmapItem::setWindowId(int id)
         return;
     
     if (m_item) {
+        if (isVisible()) m_item->exposeRelease();
         m_item->imageRelease();
         m_item = 0;
     }
@@ -346,8 +347,23 @@ void WindowPixmapItem::geometryChanged(const QRectF &n, const QRectF &o)
     if (m_shaderEffect) m_shaderEffect->setSize(n.size());
 }
 
+void WindowPixmapItem::itemChange(ItemChange change, const ItemChangeData &data)
+{
+    if (change == ItemVisibleHasChanged) {
+        if (m_item) {
+            if (data.boolValue) m_item->exposeAddref();
+            else m_item->exposeRelease();
+        }
+    }
+}
+
+
 void WindowPixmapItem::updateItem()
 {
+    if (m_item && isVisible()) {
+        m_item->exposeRelease();
+    }
+
     LipstickCompositor *c = LipstickCompositor::instance();
     m_item = 0;
 
@@ -373,6 +389,9 @@ void WindowPixmapItem::updateItem()
         }
 
         w->imageAddref();
+        if (isVisible()) {
+            w->exposeAddref();
+        }
 
         update();
     }

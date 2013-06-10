@@ -44,6 +44,7 @@ public:
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *);
     virtual void geometryChanged(const QRectF &, const QRectF &);
+    virtual void itemChange(ItemChange change, const ItemChangeData &data);
 
 signals:
     void windowIdChanged();

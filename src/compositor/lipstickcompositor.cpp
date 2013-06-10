@@ -25,6 +25,9 @@
 
 LipstickCompositor *LipstickCompositor::m_instance = 0;
 
+static const QEvent::Type Remove = QEvent::User;
+static const QEvent::Type ExposeChange = QEvent::Type(QEvent::User + 1);
+
 static bool compositorDebug()
 {
     static enum { Yes, No, Unknown } status = Unknown;
@@ -38,7 +41,8 @@ static bool compositorDebug()
 }
 
 LipstickCompositor::LipstickCompositor()
-: QWaylandCompositor(this), m_totalWindowCount(0), m_nextWindowId(1), m_homeActive(true), m_shaderEffect(0)
+: QWaylandCompositor(this), m_totalWindowCount(0), m_nextWindowId(1), m_homeActive(true), m_shaderEffect(0),
+  m_fullscreenSurface(0)
 {
     if (m_instance) qFatal("LipstickCompositor: Only one compositor instance per process is supported");
     m_instance = this;
@@ -70,7 +74,6 @@ void LipstickCompositor::componentComplete()
 void LipstickCompositor::surfaceCreated(QWaylandSurface *surface)
 {
     Q_UNUSED(surface)
-    connect(surface, SIGNAL(destroyed(QObject*)), this, SLOT(surfaceDestroyed()));
     connect(surface, SIGNAL(mapped()), this, SLOT(surfaceMapped()));
     connect(surface, SIGNAL(unmapped()), this, SLOT(surfaceUnmapped()));
     connect(surface, SIGNAL(sizeChanged()), this, SLOT(surfaceSizeChanged()));
@@ -145,12 +148,25 @@ int LipstickCompositor::windowIdForLink(QWaylandSurface *s, uint link) const
 
 void LipstickCompositor::clearKeyboardFocus()
 {
-    defaultInputDevice()->setKeyboardFocus(0); 
+    defaultInputDevice()->setKeyboardFocus(0);
 }
 
-void LipstickCompositor::surfaceDestroyed()
+void LipstickCompositor::setFullscreenSurface(QWaylandSurface *surface)
 {
-    surfaceUnmapped(static_cast<QWaylandSurface *>(sender()));
+    if (surface == m_fullscreenSurface)
+        return;
+    m_fullscreenSurface = surface;
+    setDirectRenderSurface(m_fullscreenSurface, openglContext());
+    if (directRenderSurface() != m_fullscreenSurface) {
+        qWarning() << Q_FUNC_INFO << "failed to set direct render surface";
+    }
+    emit fullscreenSurfaceChanged();
+}
+
+void LipstickCompositor::surfaceAboutToBeDestroyed(QWaylandSurface *surface)
+{
+    Q_ASSERT(surface);
+    surfaceUnmapped(static_cast<QWaylandSurface *>(surface));
 }
 
 void LipstickCompositor::surfaceMapped()
@@ -214,7 +230,7 @@ void LipstickCompositor::surfaceTitleChanged()
 
 void LipstickCompositor::windowSwapped()
 {
-    frameFinished();
+    frameFinished(m_fullscreenSurface);
 }
 
 void LipstickCompositor::windowDestroyed()
@@ -240,6 +256,7 @@ void LipstickCompositor::windowPropertyChanged(const QString &property)
 void LipstickCompositor::surfaceUnmapped(QWaylandSurface *surface)
 {
     LipstickCompositorWindow *item = static_cast<LipstickCompositorWindow *>(surface->surfaceItem());
+    surface->setSurfaceItem(0);
 
     if (item) {
         int id = item->windowId();
@@ -313,10 +330,16 @@ QQmlComponent *LipstickCompositor::shaderEffectComponent()
 
 LipstickCompositorWindow::LipstickCompositorWindow(int windowId, const QString &category,
                                                    QWaylandSurface *surface, QQuickItem *parent)
-: QWaylandSurfaceItem(surface, parent), m_windowId(windowId), m_category(category), m_ref(0),
-  m_delayRemove(false), m_windowClosed(false), m_removePosted(false), m_mouseRegionValid(false)
+: QWaylandSurfaceItem(surface, parent), m_windowId(windowId), m_category(category),
+  m_ref(0), m_exposeRef(0),
+  m_delayRemove(false), m_windowClosed(false),
+  m_removePosted(false), m_exposePosted(false),
+  m_mouseRegionValid(false)
 {
     refreshMouseRegion();
+    if (isVisible()) {
+        exposeAddref();
+    }
 }
 
 QVariant LipstickCompositorWindow::userData() const
@@ -384,6 +407,25 @@ void LipstickCompositorWindow::imageRelease()
     tryRemove();
 }
 
+void LipstickCompositorWindow::exposeAddref()
+{
+    if (!m_exposeRef && !m_exposePosted) {
+        m_exposePosted = true;
+        QCoreApplication::postEvent(this, new QEvent(ExposeChange));
+    }
+    ++m_exposeRef;
+}
+
+void LipstickCompositorWindow::exposeRelease()
+{
+    Q_ASSERT(m_exposeRef);
+    --m_exposeRef;
+    if (!m_exposeRef && !m_exposePosted) {
+        m_exposePosted = true;
+        QCoreApplication::postEvent(this, new QEvent(ExposeChange));
+    }
+}
+
 bool LipstickCompositorWindow::canRemove() const
 {
     return m_windowClosed && !m_delayRemove && m_ref == 0;
@@ -393,7 +435,7 @@ void LipstickCompositorWindow::tryRemove()
 {
     if (canRemove() && !m_removePosted) {
         m_removePosted = true;
-        QCoreApplication::postEvent(this, new QEvent(QEvent::User));
+        QCoreApplication::postEvent(this, new QEvent(Remove));
     }
 }
 
@@ -433,7 +475,16 @@ bool LipstickCompositorWindow::isInProcess() const
 bool LipstickCompositorWindow::event(QEvent *e)
 {
     bool rv = QWaylandSurfaceItem::event(e);
-    if (e->type() == QEvent::User) {
+    if (e->type() == ExposeChange) {
+        m_exposePosted = false;
+
+        bool exposed = m_exposeRef > 0;
+        if (surface() && exposed != clientRenderingEnabled()) {
+            setClientRenderingEnabled(exposed);
+        }
+    }
+
+    if (e->type() == Remove) {
         m_removePosted = false;
         if (canRemove()) delete this;
     }
@@ -510,6 +561,19 @@ void LipstickCompositorWindow::touchEvent(QTouchEvent *event)
         inputDevice->sendFullTouchEvent(event);
     } else {
         event->ignore();
+    }
+}
+
+void LipstickCompositorWindow::itemChange(ItemChange change, const ItemChangeData &data)
+{
+    if (change == ItemVisibleHasChanged) {
+        if (surface()) {
+            if (data.boolValue) {
+                exposeAddref();
+            } else {
+                exposeRelease();
+            }
+        }
     }
 }
 

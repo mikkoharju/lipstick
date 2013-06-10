@@ -58,6 +58,7 @@ public:
     Q_INVOKABLE QObject *windowForId(int) const;
     Q_INVOKABLE void closeClientForWindowId(int);
     Q_INVOKABLE void clearKeyboardFocus();
+    Q_INVOKABLE void setFullscreenSurface(QWaylandSurface *surface);
 
     LipstickCompositorProcWindow *mapProcWindow(const QString &title, const QString &category, const QRect &);
 
@@ -71,9 +72,12 @@ signals:
     void availableWinIdsChanged();
 
     void homeActiveChanged();
+    void fullscreenSurfaceChanged();
+
+protected:
+     virtual void surfaceAboutToBeDestroyed(QWaylandSurface *surface);
 
 private slots:
-    void surfaceDestroyed();
     void surfaceMapped();
     void surfaceUnmapped();
     void surfaceSizeChanged();
@@ -112,6 +116,7 @@ private:
     bool m_homeActive;
 
     QQmlComponent *m_shaderEffect;
+    QWaylandSurface *m_fullscreenSurface;
 };
 
 class LIPSTICK_EXPORT LipstickCompositorWindow : public QWaylandSurfaceItem
@@ -155,6 +160,7 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *event);
     virtual void wheelEvent(QWheelEvent *event);
     virtual void touchEvent(QTouchEvent *event);
+    virtual void itemChange(ItemChange change, const ItemChangeData &data);
 
 signals:
     void userDataChanged();
@@ -167,6 +173,8 @@ private:
     friend class WindowPixmapItem;
     void imageAddref();
     void imageRelease();
+    void exposeAddref();
+    void exposeRelease();
 
     bool canRemove() const;
     void tryRemove();
@@ -175,9 +183,11 @@ private:
     int m_windowId;
     QString m_category;
     int m_ref;
+    int m_exposeRef;
     bool m_delayRemove:1;
     bool m_windowClosed:1;
     bool m_removePosted:1;
+    bool m_exposePosted:1;
     bool m_mouseRegionValid:1;
     QVariant m_data;
     QRegion m_mouseRegion;
