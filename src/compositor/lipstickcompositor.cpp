@@ -520,18 +520,19 @@ void LipstickCompositor::setScreenOrientationFromSensor()
     if (debug())
         qDebug() << "Screen orientation changed " << reading->orientation();
 
+    Qt::ScreenOrientation sensorOrientation = m_sensorOrientation;
     switch (reading->orientation()) {
         case QOrientationReading::TopUp:
-            setScreenOrientation(Qt::PortraitOrientation);
+            sensorOrientation = Qt::PortraitOrientation;
             break;
         case QOrientationReading::TopDown:
-            setScreenOrientation(Qt::InvertedPortraitOrientation);
+            sensorOrientation = Qt::InvertedPortraitOrientation;
             break;
         case QOrientationReading::LeftUp:
-            setScreenOrientation(Qt::InvertedLandscapeOrientation);
+            sensorOrientation = Qt::InvertedLandscapeOrientation;
             break;
         case QOrientationReading::RightUp:
-            setScreenOrientation(Qt::LandscapeOrientation);
+            sensorOrientation = Qt::LandscapeOrientation;
             break;
         case QOrientationReading::FaceUp:
         case QOrientationReading::FaceDown:
@@ -539,8 +540,12 @@ void LipstickCompositor::setScreenOrientationFromSensor()
             break;
         case QOrientationReading::Undefined:
         default:
-            setScreenOrientation(Qt::PrimaryOrientation);
+            sensorOrientation = Qt::PrimaryOrientation;
             break;
+    }
+    if (sensorOrientation != m_sensorOrientation) {
+        m_sensorOrientation = sensorOrientation;
+        emit sensorOrientationChanged();
     }
 }
 
